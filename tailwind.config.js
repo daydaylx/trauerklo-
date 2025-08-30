@@ -26,13 +26,18 @@ export default {
         blink: {
           "0%, 92%, 100%": { transform: "scaleY(1)" },
           "95%": { transform: "scaleY(0.1)" }
+        },
+        breath: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.02)" }
         }
       },
       animation: {
         "wobble-slow": "wobble 2.4s ease-in-out infinite",
         "wobble-fast": "wobble 1.2s ease-in-out infinite",
         "float": "float 6s ease-in-out infinite",
-        "blink": "blink 4.5s ease-in-out infinite"
+        "blink": "blink 4.5s ease-in-out infinite",
+        "breath": "breath 6s ease-in-out infinite"
       }
     },
   },

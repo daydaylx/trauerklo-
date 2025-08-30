@@ -8,11 +8,14 @@ import type { KlossConfig, Message } from "../types/core";
 import { getRecentMessages, sendMessage } from "../features/chat/controller";
 import { detectEmotion } from "../features/emotion/heuristics";
 import { applyPalette } from "../features/customize/palette";
+import { FACE_DEFAULT } from "../components/klopsShapes";
 
 const DEFAULT_CFG: KlossConfig = {
   id: "current", label: "Aktuell",
   baseShape: "classic", eyes: "shiny", mouth: "smile",
-  accessories: {}, palette: "pastel-mint"
+  accessories: {}, palette: "pastel-mint",
+  material: "jelly",
+  face: { ...FACE_DEFAULT }
 };
 
 export function ChatRoute() {
@@ -23,7 +26,7 @@ export function ChatRoute() {
 
   useEffect(() => {
     db.presets.get("current").then(p => {
-      const next = p ?? DEFAULT_CFG;
+      const next = p ? { ...DEFAULT_CFG, ...p, face: p.face ?? DEFAULT_CFG.face, material: p.material ?? DEFAULT_CFG.material } : DEFAULT_CFG;
       setCfg(next);
       applyPalette(next.palette);
     });
@@ -59,7 +62,7 @@ export function ChatRoute() {
     <div className="max-w-4xl mx-auto p-4 flex flex-col gap-4">
       <header className="glass rounded-2xl px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[var(--kl-accent)] animate-float" />
+          <div className="w-8 h-8 rounded-full bg-[var(--kl-accent)]" />
           <h1 className="text-lg font-semibold">Trauerkloß</h1>
         </div>
         <nav className="flex gap-3 text-sm">
@@ -69,8 +72,8 @@ export function ChatRoute() {
       </header>
 
       <div className="rounded-3xl p-6 glass-heavy relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 animate-float"
-             style={{ background: "radial-gradient(60% 60% at 20% 20%, rgba(125,211,252,0.15), transparent 60%), radial-gradient(60% 60% at 80% 30%, rgba(255,255,255,0.06), transparent 60%)" }} />
+        <div className="absolute inset-0 -z-10"
+             style={{ background: "radial-gradient(60% 60% at 20% 20%, rgba(125,211,252,0.15), transparent 60%), radial-gradient(60% 60% at 80% 30%, rgba(255,255,255,0.08), transparent 60%)" }} />
         <div className="grid md:grid-cols-[280px,1fr] gap-6 items-start">
           <KlopsView cfg={cfg} emotion={headerEmotion as any} />
           <main className="min-h-[40vh]">

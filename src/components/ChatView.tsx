@@ -8,7 +8,7 @@ export function ChatView({ messages }: { messages: Message[] }) {
           <div className={`px-3 py-2 rounded-2xl text-sm ${
             m.role === "user"
               ? "glass bg-white/10 rounded-br-sm"
-              : "glass bg-white/6 rounded-bl-sm"
+              : "glass bg-white/5 rounded-bl-sm"
           }`}>
             {m.text}
           </div>

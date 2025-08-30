@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   KlossConfig, BaseShape, Eyes, Mouth, PaletteId,
-  AccessoryHead, AccessoryFace, AccessoryNeck
+  AccessoryHead, AccessoryFace, AccessoryNeck, FaceParams, Material
 } from "../../types/core";
 import { db } from "../../db/dexie";
 import { KlopsView } from "../../components/KlopsView";
 import { applyPalette, PALETTES } from "./palette";
+import { FACE_DEFAULT } from "../../components/klopsShapes";
 
 const SHAPES: BaseShape[] = ["classic","squish","ripple","stardrop","bean","drip"];
 const EYES: Eyes[] = ["simple","sleepy","shiny"];
@@ -14,11 +15,14 @@ const HEAD: AccessoryHead[] = ["beanie","hat"];
 const FACE: AccessoryFace[] = ["plaster","tear"];
 const NECK: AccessoryNeck[] = ["scarf"];
 const PAL: PaletteId[] = ["pastel-mint","pastel-peach","lavender","sage","night-sky","sand","candy","slate"];
+const MATERIALS: Material[] = ["jelly","matte","paper"];
 
 const DEFAULT: KlossConfig = {
   id: "current", label: "Aktuell",
   baseShape: "classic", eyes: "shiny", mouth: "smile",
-  accessories: {}, palette: "pastel-mint"
+  accessories: {}, palette: "pastel-mint",
+  material: "jelly",
+  face: { ...FACE_DEFAULT }
 };
 
 export function Editor() {
@@ -27,12 +31,20 @@ export function Editor() {
 
   useEffect(() => {
     db.presets.get("current").then(p => {
-      const base = p ?? DEFAULT;
+      const base = p ? migrate(p) : DEFAULT;
       setCfg(base);
       applyPalette(base.palette);
     });
-    db.presets.toArray().then(setPresets);
+    db.presets.toArray().then(arr => setPresets(arr.map(migrate)));
   }, []);
+
+  function migrate(inCfg: KlossConfig): KlossConfig {
+    return {
+      ...inCfg,
+      material: inCfg.material ?? "jelly",
+      face: inCfg.face ?? { ...FACE_DEFAULT },
+    };
+  }
 
   function update<K extends keyof KlossConfig>(k: K, v: KlossConfig[K]) {
     const next = { ...cfg, [k]: v };
@@ -47,6 +59,12 @@ export function Editor() {
     db.presets.put(next);
   }
 
+  function setFace(partial: Partial<FaceParams>) {
+    const next = { ...cfg, face: { ...cfg.face!, ...partial } };
+    setCfg(next);
+    db.presets.put(next);
+  }
+
   async function savePreset() {
     const p = { ...cfg, id: crypto.randomUUID(), label: `Preset ${presets.length+1}` };
     await db.presets.add(p);
@@ -56,7 +74,7 @@ export function Editor() {
   async function loadPreset(id: string) {
     const p = await db.presets.get(id);
     if (!p) return;
-    const next = { ...p, id: "current", label: "Aktuell" };
+    const next = migrate({ ...p, id: "current", label: "Aktuell" });
     setCfg(next);
     applyPalette(next.palette);
     await db.presets.put(next);
@@ -64,15 +82,24 @@ export function Editor() {
 
   function randomize() {
     const pick = <T,>(arr: readonly T[]) => arr[Math.floor(Math.random()*arr.length)];
+    const face: FaceParams = {
+      eyeOffsetX: 20 + Math.round(Math.random()*14),
+      eyeY: 112 + Math.round(Math.random()*10),
+      eyeScale: 0.95 + Math.random()*0.25,
+      mouthY: 152 + Math.round(Math.random()*12),
+      mouthWidth: 48 + Math.round(Math.random()*28),
+    };
     const next: KlossConfig = {
-      id: "current", label: "Aktuell",
+      ...cfg,
       baseShape: pick(SHAPES), eyes: pick(EYES), mouth: pick(MOUTHS),
       accessories: {
         head: Math.random() < 0.5 ? pick(HEAD) : undefined,
         face: Math.random() < 0.3 ? pick(FACE) : undefined,
         neck: Math.random() < 0.4 ? pick(NECK) : undefined,
       },
-      palette: pick(PAL)
+      palette: pick(PAL),
+      material: pick(MATERIALS),
+      face
     };
     setCfg(next);
     applyPalette(next.palette);
@@ -92,15 +119,16 @@ export function Editor() {
       </header>
 
       <section className="grid md:grid-cols-2 gap-6">
-        {/* Preview Panel */}
-        <div className="rounded-3xl p-6 glass-heavy relative overflow-hidden">
-          <div className="absolute inset-0 -z-10 animate-float"
-               style={{ background: "radial-gradient(60% 60% at 20% 20%, rgba(125,211,252,0.15), transparent 60%), radial-gradient(60% 60% at 80% 30%, rgba(255,255,255,0.06), transparent 60%)" }} />
+        {/* Preview Panel: sattes, modernes Panel statt grauem Kasten */}
+        <div className="rounded-3xl p-6 glass-heavy relative overflow-hidden ring-1 ring-white/10">
+          <div className="absolute inset-0 -z-10 pointer-events-none"
+               style={{ background: "radial-gradient(60% 60% at 20% 20%, rgba(125,211,252,0.20), transparent 60%), radial-gradient(60% 60% at 80% 30%, rgba(255,255,255,0.10), transparent 60%)" }} />
           <KlopsView cfg={cfg} emotion="idle" />
         </div>
 
         {/* Controls */}
         <div className="grid grid-cols-2 gap-3 items-start">
+          <Select label="Material" value={cfg.material ?? "jelly"} options={MATERIALS} onChange={v=>update("material", v as Material)} />
           <Select label="Form" value={cfg.baseShape} options={SHAPES} onChange={v=>update("baseShape", v as BaseShape)} />
           <Select label="Palette" value={cfg.palette} options={PAL} onChange={v=>update("palette", v as PaletteId)} />
           <Select label="Augen" value={cfg.eyes} options={EYES} onChange={v=>update("eyes", v as Eyes)} />
@@ -109,6 +137,13 @@ export function Editor() {
           <Select label="Face" value={cfg.accessories.face ?? ""} options={["",...FACE]} onChange={v=>setAcc("face", v || undefined)} />
           <Select label="Neck" value={cfg.accessories.neck ?? ""} options={["",...NECK]} onChange={v=>setAcc("neck", v || undefined)} />
 
+          {/* Face sliders */}
+          <Slider label="Augenabstand" min={16} max={36} step={1} value={cfg.face?.eyeOffsetX ?? FACE_DEFAULT.eyeOffsetX} onChange={v=>setFace({ eyeOffsetX: v })}/>
+          <Slider label="Augenhöhe"   min={110} max={126} step={1} value={cfg.face?.eyeY ?? FACE_DEFAULT.eyeY} onChange={v=>setFace({ eyeY: v })}/>
+          <Slider label="Augengröße"  min={0.8} max={1.2} step={0.05} value={cfg.face?.eyeScale ?? FACE_DEFAULT.eyeScale} onChange={v=>setFace({ eyeScale: v })}/>
+          <Slider label="Mundhöhe"    min={148} max={172} step={1} value={cfg.face?.mouthY ?? FACE_DEFAULT.mouthY} onChange={v=>setFace({ mouthY: v })}/>
+          <Slider label="Mundbreite"  min={40} max={84} step={2} value={cfg.face?.mouthWidth ?? FACE_DEFAULT.mouthWidth} onChange={v=>setFace({ mouthWidth: v })}/>
+          
           {/* Palette Swatches */}
           <div className="col-span-2">
             <div className="text-sm text-kl-muted mb-1">Farbwelten</div>
@@ -130,9 +165,8 @@ export function Editor() {
         <h2 className="font-medium mb-2">Presets</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {presets.filter(p=>p.id!=="current").map(p => (
-            <button key={p.id} onClick={()=>loadPreset(p.id)} className="glass rounded-2xl p-3 hover:bg-white/12 transition">
+            <button key={p.id} onClick={()=>loadPreset(p.id)} className="glass rounded-2xl p-3 hover:bg-white/10 transition">
               <div className="w-full aspect-square">
-                {/* Mini-Preview */}
                 <div className="scale-75 origin-top">
                   <KlopsView cfg={p} emotion="idle" />
                 </div>
@@ -155,6 +189,18 @@ function Select<T extends string>({ label, value, options, onChange }:{
       <select className="seg" value={value} onChange={(e)=>onChange(e.target.value)}>
         {options.map(o => <option key={o} value={o}>{o||"—"}</option>)}
       </select>
+    </label>
+  );
+}
+function Slider({ label, min, max, step, value, onChange }:{
+  label: string; min: number; max: number; step: number; value: number; onChange: (v:number)=>void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="text-kl-muted">{label} <span className="opacity-60">({typeof value==='number'?value.toFixed(step<1?2:0):value})</span></span>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e)=>onChange(Number(e.target.value))}
+        className="w-full accent-[var(--kl-accent)]" />
     </label>
   );
 }
