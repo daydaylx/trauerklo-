@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme Variablen */
+:root {
+  --kl-bg: #0f0f12;
+  --kl-fg: #e6e6ea;
+  --kl-accent: #7dd3fc;
+  --kl-blob: #7dd3fc; /* wird durch applyPalette() gesetzt */
+}
+
+:root { color-scheme: dark; }
+body { background: var(--kl-bg); color: var(--kl-fg); }
+
+@layer utilities {
+  .glass {
+    @apply bg-white/6 backdrop-blur-md border border-white/10 shadow-soft;
+  }
+  .glass-heavy {
+    @apply bg-white/10 backdrop-blur-xl border border-white/15 shadow-soft;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium;
+  }
+  .btn-accent {
+    @apply btn bg-[var(--kl-accent)] text-black;
+  }
+  .input {
+    @apply bg-[#0b0e12] border border-[#1f2937] rounded-xl px-3 py-3 text-[15px];
+  }
+  .seg {
+    @apply bg-[#0b0e12] border border-[#1f2937] rounded-lg px-3 py-2 text-sm;
+  }
+}
