@@ -1,5 +1,5 @@
-const CACHE = "tk-assets-v1";
-const ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
+const CACHE = "tk-assets-v2";
+const ASSETS = [".", "index.html", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
@@ -13,10 +13,8 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
-  if (url.origin === location.origin) {
-    e.respondWith(
-      caches.match(e.request).then(res => res || fetch(e.request))
-    );
-  }
+  if (new URL(e.request.url).origin !== location.origin) return;
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
+  );
 });

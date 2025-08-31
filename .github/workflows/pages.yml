@@ -38,11 +38,15 @@ jobs:
           else
             echo "VITE_BASE=/$REPO_NAME/" >> $GITHUB_ENV
           fi
+          echo "Using base: $VITE_BASE"
 
       - name: Build
         run: npm run build
         env:
           VITE_BASE: ${{ env.VITE_BASE }}
+
+      - name: SPA 404 fallback
+        run: cp dist/index.html dist/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
