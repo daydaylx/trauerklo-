@@ -24,8 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # WICHTIG: aktiviert GitHub Pages für dieses Repo (GitHub Actions als Quelle)
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -44,7 +47,6 @@ jobs:
           else
             echo "VITE_BASE=/$REPO_NAME/" >> $GITHUB_ENV
           fi
-          echo "Using base: \$VITE_BASE"
 
       - name: Build
         run: npm run build
