@@ -24,11 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Aktiviert Pages (Source=GitHub Actions), falls noch aus
+      # Nur konfigurieren (keine Aktivierung per API)
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,7 +45,6 @@ jobs:
           else
             echo "VITE_BASE=/$REPO_NAME/" >> $GITHUB_ENV
           fi
-          echo "Using base: $VITE_BASE"
 
       - name: Build
         run: npm run build
@@ -65,3 +62,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
